@@ -2,7 +2,6 @@ import numpy as np
 from tqdm import tqdm
 import pickle
 from time import perf_counter
-from scipy.sparse.linalg import svds
 import datetime
 import h5py
 import glob
@@ -250,94 +249,3 @@ def fk_analysis(t0, draw_figure = True,downsamplefactor=5,cable = 'whidbey', rec
     
     return ft,f,k
 
-def plot_svd(S,f,k,t,mode,time_series,outputfile='svd'):
-
-    '''
-    Plot the results
-    '''
-    vm = 0.1
-    
-    plt.subplots(2,1,figsize=(10,10))
-
-    ax1=plt.subplot(2,1,1)
-    plt.title(f'Fraction of variance in 1st mode: {100*max(S)/sum(S)}%')
-    c=plt.imshow(mode,aspect='auto',vmin=0,vmax=vm,extent=[k[0],k[-1],f[0],f[-1]],cmap='gray_r')
-
-    ax1.set_ylim([-2.5,2.5])
-    ax1.set_xlim([-0.04,0.04])
-    ax1.set_xlabel('Wavenumber (1/m)')
-    ax1.set_ylabel('Frequency (Hz)')
-#     plt.colorbar()
-
-    ax2=plt.subplot(2,1,2)
-    ind = np.where(np.abs(time_series)>1e-10)
-    sign_change = np.sign(np.mean(time_series))
-    ax2.plot(t[ind],time_series[ind]*sign_change,'o')
-    plt.xticks(rotation = 25)
-    ax2.grid()
-    
-    plt.savefig(f'{outputfile}.pdf')
-
-
-def svd_analysis(q=10,N=24,dt=60,
-                 start_time = datetime.datetime(2022, 5, 8, 0, 0, 0), 
-                 outputfile='svd_10min_window_length',
-                 window_length=1,
-                 verbose=False):
-    '''
-    Carries out an SVD analysis of a data matrix, D. Each column of D contains a flattened fk-plot.  There are N
-    samples contained in D.  The samples are spaced apart in time by dt minutes.  For each sample, we evaluate chunks of
-    window_length minutes of data. q is the decimation factor.
-    '''
-    
-    '''
-    Build the data matrix
-    '''
-    sample_rate = 100 # Hz
-    file_duration = 60 # s
-    samples_per_minute = sample_rate * file_duration
-    nt = int(window_length * samples_per_minute/q) # Number of time steps in each sample
-    nx = 375 # Number of subsea channels at Whidbey
-    D = np.zeros((nx*nt,N))
-    t = []
-    
-    if verbose: print(f'Building data matrix with nt={nt}, nx={nx}') 
-    for i in tqdm(range(N)):
-        this_time = start_time + i*datetime.timedelta(minutes=dt)
-        t.append(this_time)
-        ft,f,k = fk_analysis(this_time,draw_figure=False,downsamplefactor=q,
-                            record_length = window_length)
-        if len(ft) == 1:
-            continue
-
-        shape = ft.shape
-        this_nt = shape[0]
-        this_nx = shape[1]
-
-        if this_nt < nt:
-            ft_new = np.zeros((nt,nx))
-            ft_new[0:this_nt,0:nx] = np.abs(ft)
-            this_column =  ft_new.flatten()
-        elif this_nt > nt:
-            ft_new = np.zeros((nt,nx))
-            ft_new[0:nt,0:nx] = np.abs(ft[0:nt,0:nx])
-            this_column =  ft_new.flatten()
-        else:
-            this_column = np.abs( ft.flatten() )
-
-        D[:,i] = this_column
-    t=np.array(t)
-
-    '''
-    Calculate the SVD
-    '''
-    ns = N
-    t1 = perf_counter()
-    U,S,V = svds( D[:,0:ns] )
-    t = t[0:ns]
-    print(f'SVD runtime:   {perf_counter()-t1} s')
-    
-    # open a file, where you ant to store the data
-    file = open(f'{outputfile}.pickle', 'wb')
-    pickle.dump((U,S,V,t,f,k), file)
-    file.close()
