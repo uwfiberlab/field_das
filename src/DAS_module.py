@@ -12,28 +12,6 @@ from datetime import datetime as DT
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-def data_wrangler(cable,record_length,t0):
-    if cable == 'seadasn':
-        prefix = 'seadasn'
-        network_name = 'SeaDAS-N'
-        if t0 < datetime.datetime(2022, 6, 20, 0, 0, 0):
-            datastore='/data/data0/seadasn_2022-03-17_2022-06-20/'
-        elif (t0 >= datetime.datetime(2022, 6, 20, 0, 0, 0)) and (t0 < datetime.datetime(2022, 10, 7, 0, 0, 0)):
-            datastore='/data/data7/seadasn_2022-06-21_2022-10-06/'
-        else:
-            datastore='/data/data3/seadasn/'
-
-    elif cable == 'whidbey':
-        prefix = 'whidbey'
-        network_name='Whidbey-DAS'
-        if t0 < datetime.datetime(2022,10,23,4,50,0):
-            datastore = '/data/data5/Converted/'
-        else:
-            datastore = '/data/data6/whidbey/'
-        
-    return prefix, network_name, datastore
-
-
 def dt_to_utc_format(t):
     from obspy import UTCDateTime
     return UTCDateTime(t.strftime('%Y-%m-%dT%H:%M:%S'))
