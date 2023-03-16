@@ -1,0 +1,13 @@
+name: DASxCorr
+channels:
+  - conda-forge
+dependencies:
+  - mpi4py
+  - obspy
+  - pip
+  - python=3.7
+  - numpy
+  - numba
+  - pycwt
+  - pip:
+    - datetime
