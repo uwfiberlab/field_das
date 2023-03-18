@@ -2,12 +2,10 @@ name: DASxCorr
 channels:
   - conda-forge
 dependencies:
-  - mpi4py
+  - scipy
   - obspy
-  - pip
+  - h5py
   - python=3.7
   - numpy
-  - numba
-  - pycwt
-  - pip:
-    - datetime
+  - os
+  - matplotlib
