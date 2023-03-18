@@ -1,6 +1,5 @@
 import numpy as np
 from tqdm import tqdm
-import pickle
 from time import perf_counter
 import datetime
 import h5py
