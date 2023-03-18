@@ -1,11 +1,11 @@
-name: DASxCorr
+name: psfdas
 channels:
   - conda-forge
 dependencies:
   - scipy
   - obspy
   - h5py
-  - python=3.7
+  - jupyter
+  - python=3.9
   - numpy
-  - os
   - matplotlib
