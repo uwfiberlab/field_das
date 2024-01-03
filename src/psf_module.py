@@ -86,8 +86,9 @@ def noise_stats(H,xm,ym):
 
 class simple_xc:
 
-    def __init__(self,fdir,flist):
-        self.flist = [os.path.join(fdir,fname) for fname in flist]
+    def __init__(self, fdir, flist):
+        self.fdir = fdir
+        self.flist = [os.path.join(self.fdir, fname) for fname in flist]
         self.nf = len(self.flist)
         return
 
@@ -100,9 +101,9 @@ class simple_xc:
         self.fmax = pdict['fmax']
         self.whiten = pdict['whiten']
         self.onebit = pdict['onebit']
-        print('file at work',fdir,flist[0])
+        print('file at work',self.fdir,self.flist[0])
 
-        with h5py.File(os.path.join(fdir,flist[0]),'r') as fp:
+        with h5py.File(os.path.join(self.fdir,self.flist[0]),'r') as fp:
             self.dx = fp['Acquisition'].attrs['SpatialSamplingInterval']
             self.fs = fp['Acquisition']['Raw[0]'].attrs['OutputDataRate']
             self.nx = fp['Acquisition']['Raw[0]'].attrs['NumberOfLoci']
