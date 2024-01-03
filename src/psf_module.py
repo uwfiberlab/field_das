@@ -2,6 +2,7 @@ import numpy as np
 
 # from tqdm import tqdm
 # from time import perf_counter
+import os as os
 import datetime
 import h5py
 import glob
@@ -64,7 +65,7 @@ def noise_PDF(fdir,flist_,ns,chid,fmin,fmax):
     spec = (20 * np.log10(abs(np.fft.rfft(data,axis=1)))).flatten()
     # Generate noise PDF
     xbins = np.logspace(np.log10(fmin),np.log10(fmax),100)
-    ybins = np.linspace(20,120,100)
+    ybins = np.linspace(-20,120,140)
     H,xe,ye = np.histogram2d(freq,spec,bins=(xbins,ybins))
     for ix in range(len(xbins)-1):
         H[ix,:] /= sum(H[ix,:]) 
