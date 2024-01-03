@@ -33,6 +33,7 @@ class data_visualizer:
             self.nx = fp['Acquisition']['Raw[0]'].attrs['NumberOfLoci']
             self.ns = len(fp['Acquisition']['Raw[0]']['RawDataTime'][:])//fac
             self.data = fp['Acquisition']['Raw[0]']['RawData'][::fac, :]
+            self.dx = fp['Acquisition'].attrs['SpatialSamplingInterval']
         self.data -= np.tile(np.mean(self.data, axis=0),(self.ns, 1))
         self.filt = self.data.copy()
         return
@@ -45,8 +46,8 @@ class data_visualizer:
     def plot_data(self,xlims=[0,312],ylims=[60,0],clims=[-1,1],srcx=0):
         plt.figure(figsize=(10,6)); v = 0.8
         plt.imshow(self.filt,aspect='auto',cmap='seismic',\
-                   extent=[0,self.nx,self.ns/self.fs,0],vmin=clims[0],vmax=clims[1])
-        plt.xlabel('Channel number')
+                   extent=[0,self.nx*self.dx/1E3,self.ns/self.fs,0],vmin=clims[0],vmax=clims[1])
+        plt.xlabel('offset (km)')
         plt.ylabel('Time (s)')
         plt.ylim(ylims)
         plt.xlim(xlims)
