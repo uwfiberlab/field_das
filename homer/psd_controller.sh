@@ -1,6 +1,6 @@
 #!/bin/sh
 
-./psd_computer.py KKFL-S_A_test1_125Hz KKFL-S_A_test1
+../src/psd_computer.py KKFL-S_A_test1_125Hz KKFL-S_A_test1
 ./psd_computer.py KKFL-S_A_test2_125Hz KKFL-S_A_test2
 
 ./psd_computer.py KKFL-S_B_test1_125Hz KKFL-S_B_test1

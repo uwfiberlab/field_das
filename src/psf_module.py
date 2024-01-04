@@ -12,7 +12,10 @@ from datetime import datetime as DT
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from obspy import UTCDateTime
-
+from obspy.core.event import Catalog
+from obspy.clients.fdsn import Client
+from obspy.taup import TauPyModel
+from obspy.geodetics import locations2degrees, degrees2kilometers
 
 def get_tstamp(fname):
     datestr = fname.split('_')[1].split('-')
@@ -25,6 +28,44 @@ def get_tstamp(fname):
     S = int(timestr[2])
     return UTCDateTime('%04d-%02d-%02dT%02d:%02d:%02d' % (y,m,d,H,M,S))
 
+
+def ak_catalog(t1, t2, lat0=59.441, lon0=-152.028, a=-1, b=0.65):
+    '''
+    In:  t1, t2: start and ending timestamps
+         lat0,lon0: Reference point of DAS network
+         a, b: simple GMM parameters
+    Out: cat : USGS AK catalog meeting GMM threshold
+         ptimes : absolute P arrival times
+    '''
+    events = []; ptimes = []
+    # Get local catalog
+    catalog = Client('IRIS').get_events(
+                starttime=t1,
+                endtime=t2,
+                includeallorigins=True,
+                includeallmagnitudes=True)
+    catalog.write("example.xml", format="QUAKEML") 
+    # Loop through events 
+    for event in catalog:
+        lon = event.origins[0]['longitude']
+        lat = event.origins[0]['latitude']
+        dep = event.origins[0]['depth'] * 1e-3
+        mag = event.magnitudes[0]['mag']
+        distdeg = locations2degrees(lat0, lon0, lat, lon)
+        distkm = degrees2kilometers(distdeg)
+        rad = np.sqrt(distkm**2 + dep**2)
+        
+        if (mag - 10**(a + b*np.log10(rad)) >= 0):
+            model = TauPyModel(model='iasp91')
+            arr = model.get_travel_times(
+                source_depth_in_km=dep,
+                distance_in_degree=distdeg)
+            
+            t0 = event.origins[0]['time']
+            ptimes.append(t0 + arr[0].time)
+            events.append(event)
+
+    return Catalog(events=events), np.array(ptimes)
 
 class data_visualizer:
     def __init__(self, fpath, fac):
