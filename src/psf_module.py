@@ -96,6 +96,30 @@ class data_visualizer:
         return
 
 
+def noise_PSD(fdir,fname,nx,ns,clims=[-1,1]):
+    # Load data and calculate spectrum for each file
+    data = np.zeros((ns,nx))
+    with h5py.File(os.path.join(fdir,fname),'r') as fp:
+        data[:,:] = detrend(fp['Acquisition']['Raw[0]']['RawData'][:,:])
+        fs = fp['Acquisition']['Raw[0]'].attrs['OutputDataRate']
+        dx = fp['Acquisition'].attrs['SpatialSamplingInterval']
+    crap=np.tile(np.hamming(ns),(nx,1))
+    data *= crap.T
+    freq = np.fft.rfftfreq(ns,d=1./fs)
+    spec =np.log10(np.abs(np.fft.rfft(data,axis=0)))
+    # Generate noise PDF
+    ybins = np.logspace(np.log10(1/60),np.log10(fs/2),100)
+    xbins = np.linspace(0,nx*dx/1E3,nx)
+    plt.figure(figsize=(10,6)); v = 0.8
+    plt.imshow(spec,aspect='auto',cmap='seismic',\
+                extent=[0,nx*dx/1E3,ybins[-1],ybins[0]],vmin=clims[0],vmax=clims[1])
+    plt.xlabel('offset (km)')
+    plt.ylabel('frequency (Hz)')
+    plt.colorbar(label='dB')
+    plt.yscale('log')
+    plt.show()
+    return spec,freq,xbins,ybins
+
 def noise_PDF(fdir,flist_,ns,chid,fmin,fmax):
     # Load data and calculate spectrum for each file
     data = np.zeros((len(flist_),ns))
@@ -106,6 +130,7 @@ def noise_PDF(fdir,flist_,ns,chid,fmin,fmax):
     freq = np.tile(np.fft.rfftfreq(ns,d=1./fs),(len(flist_),1)).flatten()
     spec = (20 * np.log10(abs(np.fft.rfft(data,axis=1)))).flatten()
     # Generate noise PDF
+    print(spec.shape)
     xbins = np.logspace(np.log10(fmin),np.log10(fmax),100)
     ybins = np.linspace(-20,120,140)
     H,xe,ye = np.histogram2d(freq,spec,bins=(xbins,ybins))
@@ -151,6 +176,7 @@ class simple_xc:
             self.nx = fp['Acquisition']['Raw[0]'].attrs['NumberOfLoci']
             self.ns = len(fp['Acquisition']['Raw[0]']['RawDataTime'][:])
         x = np.arange(self.nx)*self.dx
+        print(x)
         r1 = int(np.argmin(abs(x-self.recmin)))
         r2 = int(np.argmin(abs(x-self.recmax)))
         self.recid = np.arange(r1, r2+1)
@@ -160,6 +186,9 @@ class simple_xc:
         self.nwin = int(self.ns//self.nns)
         self.spxc = np.zeros((self.nc,self.nw),dtype=np.complex_)
         self.lags = np.arange(-self.nns//2,self.nns//2)/self.fs
+        print('number of receivers', self.recid)
+        print('number of receivers', self.srcid)
+        print('number of dx', self.dx)
         self.offset = (self.recid - min(self.recid) - self.srcid) * self.dx
         return
 
