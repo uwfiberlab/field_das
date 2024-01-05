@@ -151,6 +151,8 @@ def noise_stats(H,xm,ym):
     return xm,mn,vr
 
 
+
+from scipy.signal import butter, filtfilt, detrend
 class simple_xc:
 
     def __init__(self, fdir, flist):
@@ -176,22 +178,18 @@ class simple_xc:
             self.nx = fp['Acquisition']['Raw[0]'].attrs['NumberOfLoci']
             self.ns = len(fp['Acquisition']['Raw[0]']['RawDataTime'][:])
         x = np.arange(self.nx)*self.dx
-        print(x)
-        r1 = int(np.argmin(abs(x-self.recmin)))
-        r2 = int(np.argmin(abs(x-self.recmax)))
+        r1 = int(np.argmin(abs(x-self.recmin*self.dx)))
+        r2 = int(np.argmin(abs(x-self.recmax*self.dx)))
         self.recid = np.arange(r1, r2+1)
-        self.srcid = int(np.argmin(abs(x-self.srcx))) - r1
+        self.srcid = int(np.argmin(abs(x-self.srcx*self.dx))) - r1
         self.nc = len(self.recid)
         self.nw = self.nns//2 + 1
         self.nwin = int(self.ns//self.nns)
         self.spxc = np.zeros((self.nc,self.nw),dtype=np.complex_)
         self.lags = np.arange(-self.nns//2,self.nns//2)/self.fs
-        print('number of receivers', self.recid)
-        print('number of receivers', self.srcid)
-        print('number of dx', self.dx)
         self.offset = (self.recid - min(self.recid) - self.srcid) * self.dx
         return
-
+    
 
 
     def preprocess_tr(self):
@@ -262,7 +260,8 @@ class simple_xc:
         b, a = butter(8,(self.fmin/(self.fs/2),self.fmax/(self.fs/2)),'bandpass')
         self.trxc = filtfilt(b,a,self.trxc,axis=1)
         return
-    
+
+
 def get_tstamp(fname):
     datestr = fname.split('_')[1].split('-')
     y = int(datestr[0])
