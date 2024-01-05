@@ -17,6 +17,7 @@ from obspy.clients.fdsn import Client
 from obspy.taup import TauPyModel
 from obspy.geodetics import locations2degrees, degrees2kilometers
 
+
 def get_tstamp(fname):
     datestr = fname.split('_')[1].split('-')
     y = int(datestr[0])
@@ -67,6 +68,7 @@ def ak_catalog(t1, t2, lat0=59.441, lon0=-152.028, a=-1, b=0.65):
 
     return Catalog(events=events), np.array(ptimes)
 
+
 class data_visualizer:
     def __init__(self, fpath, fac):
         with h5py.File(fpath, 'r') as fp:
@@ -96,7 +98,7 @@ class data_visualizer:
         return
 
 
-def noise_PSD(fdir,fname,nx,ns,clims=[-1,1]):
+def noise_PSD(fdir, fname, nx, ns, clims=[-1, 1]):
     # Load data and calculate spectrum for each file
     data = np.zeros((ns,nx))
     with h5py.File(os.path.join(fdir,fname),'r') as fp:
@@ -120,7 +122,8 @@ def noise_PSD(fdir,fname,nx,ns,clims=[-1,1]):
     plt.show()
     return spec,freq,xbins,ybins
 
-def noise_PDF(fdir,flist_,ns,chid,fmin,fmax):
+
+def noise_PDF(fdir, flist_, ns, chid, fmin, fmax):
     # Load data and calculate spectrum for each file
     data = np.zeros((len(flist_),ns))
     for ii, fname in enumerate(flist_):
@@ -141,7 +144,7 @@ def noise_PDF(fdir,flist_,ns,chid,fmin,fmax):
     return H,xm,ym
 
 
-def noise_stats(H,xm,ym):
+def noise_stats(H, xm, ym):
     nx = len(xm)
     mn = np.zeros(nx)
     vr = mn.copy()
@@ -151,8 +154,6 @@ def noise_stats(H,xm,ym):
     return xm,mn,vr
 
 
-
-from scipy.signal import butter, filtfilt, detrend
 class simple_xc:
 
     def __init__(self, fdir, flist):
@@ -161,7 +162,7 @@ class simple_xc:
         self.nf = len(self.flist)
         return
 
-    def set_parameters(self,pdict):
+    def set_parameters(self, pdict):
         self.srcx = pdict['srcx']
         self.recmin = pdict['recmin']
         self.recmax = pdict['recmax']
@@ -170,9 +171,9 @@ class simple_xc:
         self.fmax = pdict['fmax']
         self.whiten = pdict['whiten']
         self.onebit = pdict['onebit']
-        print('file at work',self.fdir,self.flist[0])
+        print('file at work', self.fdir, self.flist[0])
 
-        with h5py.File(os.path.join(self.fdir,self.flist[0]),'r') as fp:
+        with h5py.File(os.path.join(self.fdir, self.flist[0]), 'r') as fp:
             self.dx = fp['Acquisition'].attrs['SpatialSamplingInterval']
             self.fs = fp['Acquisition']['Raw[0]'].attrs['OutputDataRate']
             self.nx = fp['Acquisition']['Raw[0]'].attrs['NumberOfLoci']
@@ -185,11 +186,10 @@ class simple_xc:
         self.nc = len(self.recid)
         self.nw = self.nns//2 + 1
         self.nwin = int(self.ns//self.nns)
-        self.spxc = np.zeros((self.nc,self.nw),dtype=np.complex_)
-        self.lags = np.arange(-self.nns//2,self.nns//2)/self.fs
+        self.spxc = np.zeros((self.nc, self.nw), dtype=np.complex_)
+        self.lags = np.arange(-self.nns//2, self.nns//2)/self.fs
         self.offset = (self.recid - min(self.recid) - self.srcid) * self.dx
         return
-    
 
 
     def preprocess_tr(self):
@@ -197,11 +197,11 @@ class simple_xc:
         this function will 1) detrend the data , 2) taper,
         3) bandpass filter, 4) fft
         '''
-        self.tr = detrend(self.tr,axis=1)
-        self.tr *= np.tile(np.hamming(self.nns),(self.nc,1))
-        b, a = butter(8,(self.fmin/(self.fs/2),self.fmax/(self.fs/2)),'bandpass')
-        self.tr = filtfilt(b,a,self.tr,axis=1)
-        self.sp = np.fft.rfft(self.tr,axis=1)
+        self.tr = detrend(self.tr, axis=1)
+        self.tr *= np.tile(np.hamming(self.nns), (self.nc, 1))
+        b, a = butter(8, (self.fmin/(self.fs/2), self.fmax/(self.fs/2)),'bandpass')
+        self.tr = filtfilt(b, a, self.tr, axis=1)
+        self.sp = np.fft.rfft(self.tr, axis=1)
         return
 
 
@@ -211,10 +211,10 @@ class simple_xc:
         '''
         i1 = int(np.ceil(self.fmin/(self.fs/self.nns)))
         i2 = int(np.ceil(self.fmax/(self.fs/self.nns)))
-        self.sp[:,i1:i2] = np.exp(1j*np.angle(self.sp[:,i1:i2]))
-        self.sp[:,:i1] = np.cos(np.linspace(np.pi/2,np.pi,i1))**2 * \
+        self.sp[:, i1:i2] = np.exp(1j*np.angle(self.sp[:,i1:i2]))
+        self.sp[:, :i1] = np.cos(np.linspace(np.pi/2, np.pi, i1))**2 * \
                                  np.exp(1j*np.angle(self.sp[:,:i1]))
-        self.sp[:,i2:] = np.cos(np.linspace(np.pi,np.pi/2,self.nw-i2))**2 *\
+        self.sp[:, i2:] = np.cos(np.linspace(np.pi,np.pi/2,self.nw-i2))**2 *\
                                  np.exp(1j*np.angle(self.sp[:,i2:]))
         return
 
@@ -223,22 +223,22 @@ class simple_xc:
         '''
         the function takes the sighn of the time series after it has been FFTed.
         '''
-        self.tr = np.fft.irfft(self.sp,axis=1)
+        self.tr = np.fft.irfft(self.sp, axis=1)
         self.tr = np.sign(self.tr)
-        self.sp = np.fft.rfft(self.tr,axis=1)
+        self.sp = np.fft.rfft(self.tr, axis=1)
         return
 
 
-    def process_file(self,fname):
+    def process_file(self, fname):
         '''
         This function readss the data from a selected number of channels (recid)
         It then preprocess , whiten and onebit the data.
         it cross correlate the entire array with the source channel (srcid)
         '''
-        with h5py.File(fname,'r') as fp:
+        with h5py.File(fname, 'r') as fp:
             self.data = fp['Acquisition']['Raw[0]']['RawData'][:,self.recid].T
         for iwin in range(self.nwin):
-            self.tr = self.data[:,iwin*self.nns:(iwin+1)*self.nns]
+            self.tr = self.data[:, iwin*self.nns:(iwin+1)*self.nns]
             self.preprocess_tr()
             if self.whiten:
                 self.whiten_tr()
@@ -255,10 +255,11 @@ class simple_xc:
             self.process_file(fname)
         print(self.nf , self.nwin)
         self.spxc /= self.nf * self.nwin
-        self.trxc = np.fft.irfft(self.spxc,axis=1)
+        self.spxc -= np.tile(np.mean(self.spxc, axis=0), (self.nc, 1))
+        self.trxc = np.fft.irfft(self.spxc, axis=1)
         self.trxc = np.concatenate((self.trxc[:,self.nns//2:],self.trxc[:,:self.nns//2]),axis=1)
-        b, a = butter(8,(self.fmin/(self.fs/2),self.fmax/(self.fs/2)),'bandpass')
-        self.trxc = filtfilt(b,a,self.trxc,axis=1)
+        b, a = butter(8, (self.fmin/(self.fs/2),self.fmax/(self.fs/2)),'bandpass')
+        self.trxc = filtfilt(b, a, self.trxc, axis=1)
         return
 
 
